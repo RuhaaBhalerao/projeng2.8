@@ -20,11 +20,12 @@ app.post("/analyze", async (req, res) => {
   }
 
   try {
-    const response = await fetch("https://openrouter.ai/api/v1/chat", {
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "Accept": "application/json"
       },
       body: JSON.stringify({
         model: "openai/gpt-4o-mini",
@@ -45,11 +46,24 @@ Return:
       })
     });
 
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.status}`);
+    const rawText = await response.text();
+    let data;
+
+    try {
+      data = JSON.parse(rawText);
+    } catch {
+      throw new Error(`Upstream returned non-JSON (${response.status}): ${rawText.slice(0, 180)}`);
     }
 
-    const data = await response.json();
+    if (!response.ok) {
+      const upstreamMessage = data?.error?.message || data?.message || `API Error: ${response.status}`;
+      throw new Error(upstreamMessage);
+    }
+
+    if (!data?.choices?.[0]?.message?.content) {
+      throw new Error("Upstream response missing choices[0].message.content");
+    }
+
     res.json({ result: data.choices[0].message.content });
 
   } catch (err) {
