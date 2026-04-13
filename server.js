@@ -5,7 +5,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const app = express();
-app.use(cors());
+app.use(cors({ origin: "*" }));
 app.use(express.json());
 
 app.get("/health", (req, res) => {
@@ -20,7 +20,7 @@ app.post("/analyze", async (req, res) => {
   }
 
   try {
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    const response = await fetch("https://openrouter.ai/api/v1/chat", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
